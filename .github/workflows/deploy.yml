@@ -14,8 +14,8 @@ jobs:
       - name: Install Bun
         run: |
           curl -fsSL https://bun.sh/install | bash
-          export BUN_INSTALL="$HOME/.bun"
-          export PATH="$BUN_INSTALL/bin:$PATH"
+          echo 'export BUN_INSTALL="$HOME/.bun"' >> $GITHUB_ENV
+          echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> $GITHUB_ENV
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
