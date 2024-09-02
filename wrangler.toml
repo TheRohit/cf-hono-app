@@ -8,17 +8,17 @@ minify = true
 # MY_VAR = "my-variable"
 
 # [[kv_namespaces]]
-# binding = "MY_KV_NAMESPACE"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# binding = "KV"
+# id = "13450004194144c38ef264d360dbc498"
 
 # [[r2_buckets]]
-# binding = "MY_BUCKET"
-# bucket_name = "my-bucket"
+# binding = "R2"
+# bucket_name = "hono-r2-bucket"
 
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "my-database"
-# database_id = ""
+ [[d1_databases]]
+ binding = "DB"
+ database_name = "hono-cf-db"
+ database_id = "d49745da-cd6e-46f6-8a3b-7ddaf1951ffa"
 
 # [ai]
 # binding = "AI"
