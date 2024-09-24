@@ -1,13 +1,12 @@
 import { Pinecone } from "@pinecone-database/pinecone";
-import { traceable } from "langsmith/traceable";
-import { download, VideoInfo } from "./download";
 import { Context } from "hono";
+import { traceable } from "langsmith/traceable";
 import {
   createPineconeIndex,
   updatePineconeWithTranscription,
 } from "../utils/rag-util";
+import { download } from "./download";
 import { generateChapters } from "./generate-chapters";
-import { transcribe } from "./transcribe";
 
 import type { Bindings } from "../index";
 
@@ -18,49 +17,48 @@ const processVideo = traceable(
     });
 
     try {
-      // const cachedData = await c.env.KV.get<{
-      //   transcription: string;
-      //   videoInfo: VideoInfo;
-      //   output: string;
-      // }>(id);
+      const cachedData = await c.env.KV.get(id);
+      const parsed = JSON.parse(cachedData ?? "");
 
-      // if (cachedData) {
-      //   console.log("----- CACHED -----");
-      //   const { transcription, videoInfo, output } = cachedData;
-      //   return {
-      //     transcription,
-      //     output,
-      //     status: "complete",
-      //     cached: true,
-      //     videoInfo,
-      //   };
-      // }
+      if (parsed) {
+        console.log("----- CACHED -----");
+        const { transcription, videoInfo, output } = parsed;
+        return {
+          transcription,
+          output,
+          status: "complete",
+          cached: true,
+          videoInfo,
+        };
+      }
 
       // If not in cache, proceed with transcription
       const result = await download(id, c);
-      // const { transcription, videoInfo } = result;
+      const { transcription, videoInfo } = result;
 
-      // const output = await generateChapters(c, transcription);
+      const output = await generateChapters(c, transcription ?? "");
+      console.log("ADDED TO KV");
+      await c.env.KV.put(
+        id,
+        JSON.stringify({ transcription, videoInfo, output })
+      );
 
-      // await c.env.KV.put(id, JSON.stringify({ transcription, output }));
-      // await createPineconeIndex(client, "video-transcriptions", 1024);
-      // await updatePineconeWithTranscription(
-      //   client,
-      //   "video-transcriptions",
-      //   transcription,
-      //   id,
-      //   c
-      // );
+      await createPineconeIndex(client, "video-transcriptions", 1024);
+      await updatePineconeWithTranscription(
+        client,
+        "video-transcriptions",
+        transcription ?? "",
+        id,
+        c
+      );
 
-      // return {
-      // transcription,
-      // output,
-      // status: "complete",
-      // cached: false,
-      // videoInfo,
-
-      // };
-      return result;
+      return {
+        transcription,
+        output,
+        status: "complete",
+        cached: false,
+        videoInfo,
+      };
     } catch (error) {
       console.error("Error Processing Video", error);
       throw new Error("An error occurred during video processing");

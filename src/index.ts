@@ -1,6 +1,6 @@
 import type { KVNamespace, R2Bucket } from "@cloudflare/workers-types";
 import { Hono } from "hono";
-import { download } from "./tasks/download";
+import processVideo from "./tasks/process-video";
 
 export type Bindings = {
   KV: KVNamespace;
@@ -15,23 +15,7 @@ export type Bindings = {
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.get("/", (c) => {
-  return c.text("Hello , the deploy works!");
-});
-
-app.put("/put/:key", async (c) => {
-  const key = c.req.param("key");
-  const body = await c.req.text();
-  await c.env.KV.put(key, body);
-  return c.text(`Put ${key} successfully!`);
-});
-
-app.get("/get/:key", async (c) => {
-  const key = c.req.param("key");
-  const value = await c.env.KV.get(key);
-  if (value === null) {
-    return c.text(`Key ${key} not found`, 404);
-  }
-  return c.text(value);
+  return c.text("Hello , hehe");
 });
 
 app.get("/process-video/:id", async (c, env) => {
@@ -40,7 +24,7 @@ app.get("/process-video/:id", async (c, env) => {
     if (!id) {
       return c.json({ error: "Missing video ID" }, 400);
     }
-    const result = await download(id, c);
+    const result = await processVideo(c, id);
     return c.json(result);
   } catch (error) {
     console.error("Error processing video:", error);
