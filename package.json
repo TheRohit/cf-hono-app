@@ -5,10 +5,20 @@
     "deploy": "wrangler deploy --minify src/index.ts"
   },
   "dependencies": {
-    "hono": "^4.5.10"
+    "@ai-sdk/openai": "^0.0.60",
+    "@deepgram/sdk": "^3.6.0",
+    "@distube/ytdl-core": "^4.14.4",
+    "@langchain/cohere": "^0.3.0",
+    "@pinecone-database/pinecone": "^3.0.3",
+    "ai": "^3.3.37",
+    "hono": "^4.5.10",
+    "langchain": "^0.3.2",
+    "langsmith": "^0.1.55",
+    "set-cookie-parser": "^2.7.0",
+    "youtubei.js": "^10.4.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240821.1",
-    "wrangler": "^3.57.2"
+    "wrangler": "3.78.2"
   }
 }

@@ -2,14 +2,22 @@ name = "cf-hono-app"
 compatibility_date = "2024-09-02"
 main = "src/index.ts"
 minify = true
-# compatibility_flags = [ "nodejs_compat" ]
+compatibility_flags = [ "nodejs_compat_v2" ]
 
 # [vars]
-# MY_VAR = "my-variable"
+# Public variables can be added here
 
- [[kv_namespaces]]
- binding = "KV"
- id = "13450004194144c38ef264d360dbc498"
+# KV Namespace binding
+[[kv_namespaces]]
+binding = "KV"
+id = "13450004194144c38ef264d360dbc498"
+
+# Secrets that should be set with `wrangler secret put`
+# PINECONE_API_KEY
+# COHERE_API_KEY
+# GROQ_API_KEY
+# DEEPGRAM_API_KEY
+
 
  [[r2_buckets]]
  binding = "R2"
