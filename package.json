@@ -18,7 +18,7 @@
     "youtubei.js": "^10.4.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240919.0",
-    "wrangler": "3.78.2"
+    "@cloudflare/workers-types": "^4.20240821.1",
+    "wrangler": "^3.57.2"
   }
 }
