@@ -25,8 +25,8 @@ export const ytdlWorker = async (
     disableInitialSetup: true,
     parsesHLSFormat: false,
     noUpdate: true,
-    logDisplay: ["warning", "error"],
-    clients: ["mweb", "web"],
+    logDisplay: ["error"],
+    clients: ["mweb"],
     html5Player: {
       useRetrievedFunctionsFromGithub: true,
     },
@@ -41,29 +41,26 @@ export const ytdlWorker = async (
   }
 
   try {
-    console.log("Processing video ID:", id);
-    const info = await ytdl.getBasicInfo(id);
-    console.log("Video info retrieved:", info.videoDetails.title);
+    const [info] = await Promise.all([ytdl.getBasicInfo(id)]);
 
-    if (info.videoDetails.lengthSeconds > 7200) {
-      throw new Error("Video is too long. Maximum duration is 2 hours.");
+    if (!info.videoDetails || !info.videoDetails.lengthSeconds) {
+      throw new Error("Invalid video details");
+    }
+
+    if (info.videoDetails.lengthSeconds > 10800) {
+      throw new Error("Video is too long. Maximum duration is 3 hours.");
     }
 
     console.log("Starting video download...");
     const stream = await ytdl.download(id);
     console.log("Video download completed");
 
-    // Convert stream to Blob
     const audioBlob = await new Response(stream).blob();
-    console.log("Stream converted to blob, size:", audioBlob.size);
 
-    // Create a File object from the Blob
     const audioFile = new File([audioBlob], `${id}.mp4`, {
       type: "audio/mp4",
     });
 
-    console.log("Starting transcription...");
-    // Get transcription from Groq
     const transcription = await groq.audio.transcriptions.create({
       file: audioFile,
       model: "whisper-large-v3-turbo",
@@ -73,11 +70,15 @@ export const ytdlWorker = async (
     console.log("Transcription completed");
 
     return {
-      videoInfo: info,
-      transcription: transcription,
+      videoInfo: {
+        title: info.videoDetails.title,
+        length: info.videoDetails.lengthSeconds,
+        author: info?.videoDetails?.author?.name,
+      },
+      transcription: transcription.text,
     };
   } catch (error: unknown) {
-    console.error("Error processing video:", error);
+    console.error("Error:", error instanceof Error ? error.message : error);
     throw error;
   }
 };
