@@ -15,6 +15,7 @@ const processVideo = traceable(
     const client = new Pinecone({
       apiKey: c.env.PINECONE_API_KEY,
     });
+    console.log("----- PROCESSING VIDEO -----");
 
     try {
       const cachedData = await c.env.KV.get(id);

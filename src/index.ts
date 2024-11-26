@@ -1,6 +1,8 @@
 import type { KVNamespace, R2Bucket } from "@cloudflare/workers-types";
 import { Hono } from "hono";
 import processVideo from "./tasks/process-video";
+import { download } from "./tasks/download";
+import ytdlWorker from "./lib/ytdl";
 
 export type Bindings = {
   KV: KVNamespace;
@@ -20,11 +22,12 @@ app.get("/", (c) => {
 
 app.get("/process-video/:id", async (c, env) => {
   try {
+    console.log("----- PROCESSING VIDEO -----");
     const id = c.req.param("id");
     if (!id) {
       return c.json({ error: "Missing video ID" }, 400);
     }
-    const result = await processVideo(c, id);
+    const result = await ytdlWorker(id, c);
     return c.json(result);
   } catch (error) {
     console.error("Error processing video:", error);

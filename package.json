@@ -6,19 +6,21 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.60",
-    "@deepgram/sdk": "^3.6.0",
-    "@distube/ytdl-core": "^4.14.4",
-    "@langchain/cohere": "^0.3.0",
+    "@deepgram/sdk": "^3.9.0",
+    "@distube/ytdl-core": "^4.15.1",
+    "@langchain/cohere": "^0.3.1",
     "@pinecone-database/pinecone": "^3.0.3",
-    "ai": "^3.3.37",
-    "hono": "^4.5.10",
-    "langchain": "^0.3.2",
-    "langsmith": "^0.1.55",
-    "set-cookie-parser": "^2.7.0",
-    "youtubei.js": "^10.4.0"
+    "@ybd-project/ytdl-core": "^6.0.8",
+    "ai": "^3.4.33",
+    "groq-sdk": "^0.8.0",
+    "hono": "^4.6.12",
+    "langchain": "^0.3.6",
+    "langsmith": "^0.1.68",
+    "set-cookie-parser": "^2.7.1",
+    "youtubei.js": "^10.5.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240821.1",
-    "wrangler": "^3.57.2"
+    "@cloudflare/workers-types": "^4.20241112.0",
+    "wrangler": "^3.90.0"
   }
 }

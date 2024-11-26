@@ -37,9 +37,6 @@ export async function download(id: string, c: Context<{ Bindings: Bindings }>) {
     console.log("Fetching video info");
     const video = await yt.getBasicInfo(id);
 
-    console.log("Video info fetched successfully");
-
-    console.log("Choosing format");
     const format = video.chooseFormat({
       type: "audio",
     });
@@ -49,52 +46,47 @@ export async function download(id: string, c: Context<{ Bindings: Bindings }>) {
       return { error: "No suitable audio format found" };
     }
 
-    console.log("Getting streaming data");
-    const stream = await yt.download(id, {
+    const stream = await yt.getStreamingData(id, {
       type: "audio",
     });
 
-    let transcriptionResult: DeepgramResponse<SyncPrerecordedResponse>;
+    const url = stream?.url ?? "";
+
     try {
-      transcriptionResult = await deepgram.listen.prerecorded.transcribeFile(
-        stream as unknown as Buffer,
+      const res = await deepgram.listen.prerecorded.transcribeUrl(
+        { url: url },
         {
+          use_enhanced: true,
           model: "nova-2",
           smart_format: true,
-          mimetype: format.mime_type,
         }
       );
-    } catch (deepgramError: unknown) {
-      console.error("Deepgram API error:", deepgramError);
+
       return {
-        error: `Deepgram API error: ${
-          (deepgramError as Error).message || "Unknown error"
+        transcription: res.result,
+        videoInfo: {
+          title: video?.basic_info?.title ?? "",
+          description: video?.basic_info?.short_description ?? "",
+          duration: video?.basic_info?.duration?.toString() ?? "",
+          author: video?.basic_info?.author ?? "",
+          viewCount: video?.basic_info?.view_count?.toString() ?? "",
+          thumbnails:
+            video?.basic_info?.thumbnail?.map((thumb) => ({
+              url: thumb?.url,
+              width: thumb?.width,
+              height: thumb?.height,
+            })) ?? [],
+        },
+      };
+    } catch (error: unknown) {
+      console.error("Error in download task:", error);
+
+      return {
+        error: `An error occurred during download: ${
+          (error as Error).message || "Unknown error"
         }`,
       };
     }
-
-    if (transcriptionResult.error) {
-      console.error("Transcription error:", transcriptionResult.error);
-      return { error: `Transcription error: ${transcriptionResult.error}` };
-    }
-    const subtitles = srt(transcriptionResult.result);
-    const formattedSubtitles = formatSRT(subtitles);
-    return {
-      transcription: formattedSubtitles,
-      videoInfo: {
-        title: video?.basic_info?.title ?? "",
-        description: video?.basic_info?.short_description ?? "",
-        duration: video?.basic_info?.duration?.toString() ?? "",
-        author: video?.basic_info?.author ?? "",
-        viewCount: video?.basic_info?.view_count?.toString() ?? "",
-        thumbnails:
-          video?.basic_info?.thumbnail?.map((thumb) => ({
-            url: thumb?.url,
-            width: thumb?.width,
-            height: thumb?.height,
-          })) ?? [],
-      },
-    };
   } catch (error: unknown) {
     console.error("Error in download task:", error);
 
