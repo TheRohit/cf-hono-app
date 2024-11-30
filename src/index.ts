@@ -26,7 +26,7 @@ app.get("/", (c) => {
 
 app.get("/process-video/:id", async (c, env) => {
   try {
-    console.log("----- PROCESSING VIDEO -----");
+    console.log("Processing video with id: ", c.req.param("id"));
     const id = c.req.param("id");
     if (!id) {
       return c.json({ error: "Missing video ID" }, 400);
@@ -42,7 +42,6 @@ app.get("/process-video/:id", async (c, env) => {
   }
 });
 
-// Add status check endpoint
 app.get("/status/:instanceId", async (c) => {
   try {
     const instanceId = c.req.param("instanceId");

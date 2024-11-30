@@ -12,14 +12,12 @@ export const ytdlWorker = async (
   c: Context<{ Bindings: Bindings }>
 ) => {
   try {
-    // Create a new workflow instance
     const instance = await c.env.TRANSCRIPTION_WORKFLOW.create({
       params: {
         videoId: id,
       },
     });
 
-    // Return the instance ID so the client can poll for status
     return {
       instanceId: instance.id,
       status: await instance.status(),
@@ -30,7 +28,6 @@ export const ytdlWorker = async (
   }
 };
 
-// Add a status check endpoint
 export const checkStatus = async (
   instanceId: string,
   c: Context<{ Bindings: Bindings }>
