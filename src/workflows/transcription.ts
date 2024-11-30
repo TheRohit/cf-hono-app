@@ -5,9 +5,12 @@ import {
 } from "cloudflare:workers";
 import { YtdlCore } from "@ybd-project/ytdl-core/serverless";
 import { Groq } from "groq-sdk";
+import { Ai, Vectorize } from "@cloudflare/workers-types";
 
 type Env = {
   GROQ_API_KEY: string;
+  AI: Ai;
+  VECTORIZE: Vectorize;
 };
 
 type Params = {
@@ -45,7 +48,7 @@ export class TranscriptionWorkflow extends WorkflowEntrypoint<Env, Params> {
           videoId: event.payload.videoId,
           title: info.videoDetails.title,
           length: info.videoDetails.lengthSeconds,
-          author: info?.videoDetails?.author?.name,
+          author: info?.videoDetails?.author?.name ?? "",
           thumbnail: info?.videoDetails.thumbnails[0].url,
           views: info?.videoDetails.viewCount,
           publishedAt: info?.videoDetails.publishDate,
@@ -63,7 +66,6 @@ export class TranscriptionWorkflow extends WorkflowEntrypoint<Env, Params> {
           timeout: "15 minutes",
         },
         async () => {
-          // Download
           const ytdl = new YtdlCore({
             quality: "lowestaudio",
             filter: "audioonly",
@@ -109,9 +111,44 @@ export class TranscriptionWorkflow extends WorkflowEntrypoint<Env, Params> {
         }
       );
 
+      const embeddings = await step.do(
+        "generate-embeddings",
+        {
+          retries: {
+            limit: 2,
+            backoff: "exponential",
+            delay: "5 seconds",
+          },
+        },
+        async () => {
+          const modelResp = await this.env.AI.run("@cf/baai/bge-base-en-v1.5", {
+            text: [transcription],
+          });
+
+          const vectors = [
+            {
+              id: event.payload.videoId,
+              values: modelResp.data[0],
+              metadata: {
+                videoId: videoInfo.videoId,
+                title: videoInfo.title,
+                author: videoInfo.author,
+                thumbnail: videoInfo.thumbnail,
+                transcription: transcription,
+              },
+            },
+          ];
+
+          await this.env.VECTORIZE.upsert(vectors);
+
+          return modelResp.data[0];
+        }
+      );
+
       return {
         videoInfo,
         transcription,
+        embeddings,
       };
     } catch (error) {
       console.error("Workflow error:", error);

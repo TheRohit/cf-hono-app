@@ -37,3 +37,12 @@ id = "13450004194144c38ef264d360dbc498"
 name = "transcription-workflow"
 binding = "TRANSCRIPTION_WORKFLOW"
 class_name = "TranscriptionWorkflow"
+
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "transcription-index"
+
+
+[ai]
+binding = "AI"

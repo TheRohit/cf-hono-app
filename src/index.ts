@@ -1,9 +1,12 @@
 import type {
+  Ai,
   KVNamespace,
   R2Bucket,
+  VectorizeIndex,
   Workflow,
 } from "@cloudflare/workers-types";
 import { Hono } from "hono";
+import { searchTranscriptions } from "./lib/search";
 import { checkStatus, ytdlWorker } from "./lib/ytdl";
 import { TranscriptionWorkflow } from "./workflows/transcription";
 
@@ -16,6 +19,8 @@ export interface Bindings {
   DEEPGRAM_API_KEY: string;
   COOKIE: string;
   TRANSCRIPTION_WORKFLOW: Workflow;
+  AI: Ai;
+  VECTORIZE: VectorizeIndex;
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -54,6 +59,24 @@ app.get("/status/:instanceId", async (c) => {
     console.error("Error checking status:", error);
     return c.json(
       { error: "An error occurred while checking the workflow status" },
+      500
+    );
+  }
+});
+
+app.get("/search", async (c) => {
+  try {
+    const query = c.req.query("q");
+    if (!query) {
+      return c.json({ error: "Missing search query" }, 400);
+    }
+
+    const results = await searchTranscriptions(query, c);
+    return c.json({ results });
+  } catch (error) {
+    console.error("Search error:", error);
+    return c.json(
+      { error: "An error occurred while searching transcriptions" },
       500
     );
   }
