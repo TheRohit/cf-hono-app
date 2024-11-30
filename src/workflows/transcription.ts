@@ -17,7 +17,6 @@ type Params = {
 export class TranscriptionWorkflow extends WorkflowEntrypoint<Env, Params> {
   async run(event: WorkflowEvent<Params>, step: WorkflowStep) {
     try {
-      // Step 1: Get video info
       const videoInfo = await step.do("get-video-info", async () => {
         const ytdl = new YtdlCore({
           quality: "lowestaudio",
@@ -43,13 +42,16 @@ export class TranscriptionWorkflow extends WorkflowEntrypoint<Env, Params> {
         }
 
         return {
+          videoId: event.payload.videoId,
           title: info.videoDetails.title,
           length: info.videoDetails.lengthSeconds,
           author: info?.videoDetails?.author?.name,
+          thumbnail: info?.videoDetails.thumbnails[0].url,
+          views: info?.videoDetails.viewCount,
+          publishedAt: info?.videoDetails.publishDate,
         };
       });
 
-      // Step 2: Download and transcribe
       const transcription = await step.do(
         "download-and-transcribe",
         {
@@ -84,7 +86,6 @@ export class TranscriptionWorkflow extends WorkflowEntrypoint<Env, Params> {
           const arrayBuffer = await response.arrayBuffer();
           response.body?.cancel();
 
-          // Transcribe
           const groq = new Groq({
             apiKey: this.env.GROQ_API_KEY,
           });
