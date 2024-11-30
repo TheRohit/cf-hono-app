@@ -1,11 +1,11 @@
 name = "cf-hono-app"
-compatibility_date = "2024-09-02"
+
 main = "src/index.ts"
+compatibility_date = "2024-10-22"
 minify = true
 compatibility_flags = [ "nodejs_compat_v2" ]
 [observability.logs]
 enabled = true
-
 # [vars]
 # Public variables can be added here
 
@@ -32,3 +32,8 @@ id = "13450004194144c38ef264d360dbc498"
 
 # [ai]
 # binding = "AI"
+
+[[workflows]]
+name = "transcription-workflow"
+binding = "TRANSCRIPTION_WORKFLOW"
+class_name = "TranscriptionWorkflow"

@@ -1,10 +1,13 @@
-import type { KVNamespace, R2Bucket } from "@cloudflare/workers-types";
+import type {
+  KVNamespace,
+  R2Bucket,
+  Workflow,
+} from "@cloudflare/workers-types";
 import { Hono } from "hono";
-import processVideo from "./tasks/process-video";
-import { download } from "./tasks/download";
-import ytdlWorker from "./lib/ytdl";
+import { checkStatus, ytdlWorker } from "./lib/ytdl";
+import { TranscriptionWorkflow } from "./workflows/transcription";
 
-export type Bindings = {
+export interface Bindings {
   KV: KVNamespace;
   R2: R2Bucket;
   PINECONE_API_KEY: string;
@@ -12,7 +15,8 @@ export type Bindings = {
   GROQ_API_KEY: string;
   DEEPGRAM_API_KEY: string;
   COOKIE: string;
-};
+  TRANSCRIPTION_WORKFLOW: Workflow;
+}
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -38,4 +42,23 @@ app.get("/process-video/:id", async (c, env) => {
   }
 });
 
+// Add status check endpoint
+app.get("/status/:instanceId", async (c) => {
+  try {
+    const instanceId = c.req.param("instanceId");
+    if (!instanceId) {
+      return c.json({ error: "Missing instance ID" }, 400);
+    }
+    const status = await checkStatus(instanceId, c);
+    return c.json(status);
+  } catch (error) {
+    console.error("Error checking status:", error);
+    return c.json(
+      { error: "An error occurred while checking the workflow status" },
+      500
+    );
+  }
+});
+
 export default app;
+export { TranscriptionWorkflow };
