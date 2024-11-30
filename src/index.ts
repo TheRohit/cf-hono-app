@@ -29,7 +29,7 @@ app.get("/", (c) => {
   return c.text("Hello , hehe");
 });
 
-app.get("/process-video/:id", async (c, env) => {
+app.post("/process-video/:id", async (c, env) => {
   try {
     console.log("Processing video with id: ", c.req.param("id"));
     const id = c.req.param("id");
