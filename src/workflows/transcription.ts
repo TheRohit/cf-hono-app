@@ -17,6 +17,58 @@ type Params = {
   videoId: string;
 };
 
+function truncateMetadata(metadata: any): any {
+  const maxBytes = 10000; // Setting slightly below 10240 for safety
+  let truncated = JSON.parse(JSON.stringify(metadata));
+  const originalSize = JSON.stringify(truncated).length;
+
+  if (originalSize > maxBytes) {
+    console.warn(
+      `Metadata size (${originalSize} bytes) exceeds limit. Truncating...`
+    );
+    if (truncated.transcription) {
+      while (JSON.stringify(truncated).length > maxBytes) {
+        // Truncate the transcription by ~20% each time
+        truncated.transcription = truncated.transcription.slice(
+          0,
+          Math.floor(truncated.transcription.length * 0.8)
+        );
+      }
+    }
+    console.warn(`Truncated to ${JSON.stringify(truncated).length} bytes`);
+  }
+
+  return truncated;
+}
+
+function splitTranscription(
+  text: string,
+  maxChunkSize: number = 512
+): string[] {
+  // Split into sentences (roughly)
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  const chunks: string[] = [];
+  let currentChunk = "";
+
+  for (const sentence of sentences) {
+    if (
+      (currentChunk + sentence).length > maxChunkSize &&
+      currentChunk.length > 0
+    ) {
+      chunks.push(currentChunk.trim());
+      currentChunk = sentence;
+    } else {
+      currentChunk += " " + sentence;
+    }
+  }
+
+  if (currentChunk.trim().length > 0) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks;
+}
+
 export class TranscriptionWorkflow extends WorkflowEntrypoint<Env, Params> {
   async run(event: WorkflowEvent<Params>, step: WorkflowStep) {
     try {
@@ -121,27 +173,29 @@ export class TranscriptionWorkflow extends WorkflowEntrypoint<Env, Params> {
           },
         },
         async () => {
+          const chunks = splitTranscription(transcription);
+
           const modelResp = await this.env.AI.run("@cf/baai/bge-base-en-v1.5", {
-            text: [transcription],
+            text: chunks,
           });
 
-          const vectors = [
-            {
-              id: event.payload.videoId,
-              values: modelResp.data[0],
-              metadata: {
-                videoId: videoInfo.videoId,
-                title: videoInfo.title,
-                author: videoInfo.author,
-                thumbnail: videoInfo.thumbnail,
-                transcription: transcription,
-              },
-            },
-          ];
+          const vectors = chunks.map((chunk, index) => ({
+            id: `${event.payload.videoId}_${index}`,
+            values: modelResp.data[index],
+            metadata: truncateMetadata({
+              videoId: videoInfo.videoId,
+              title: videoInfo.title,
+              author: videoInfo.author,
+              thumbnail: videoInfo.thumbnail,
+              transcription: chunk,
+              chunkIndex: index,
+              totalChunks: chunks.length,
+            }),
+          }));
 
           await this.env.VECTORIZE.upsert(vectors);
 
-          return modelResp.data[0];
+          return modelResp.data;
         }
       );
 

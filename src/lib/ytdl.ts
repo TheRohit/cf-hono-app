@@ -52,14 +52,15 @@ export const checkStatus = async (
   const status = await instance.status();
 
   if (status.status === "complete" && status.output) {
-    const workflowOutput = status.output as {
+    const { videoInfo, transcription } = status.output as {
       videoInfo: TranscriptionResult["videoInfo"];
       transcription: string;
+      embeddings: number[][];
     };
 
     const result: TranscriptionResult = {
-      videoInfo: workflowOutput.videoInfo,
-      transcription: workflowOutput.transcription,
+      videoInfo,
+      transcription,
     };
 
     await c.env.KV.put(
@@ -69,6 +70,12 @@ export const checkStatus = async (
         expirationTtl: 60 * 60 * 24 * 30, // Store for 30 days
       }
     );
+
+    return {
+      status: status.status,
+      error: status.error,
+      output: result,
+    };
   }
 
   return status;
