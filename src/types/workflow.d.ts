@@ -27,3 +27,12 @@ interface WorkflowInstanceStatus {
     message: string;
   };
 }
+
+// import { Auth } from "@clerk/backend";
+
+// declare global {
+//   interface Bindings {
+//     CLERK_SECRET_KEY: string;
+//     CLERK_PUBLISHABLE_KEY: string;
+//   }
+// }

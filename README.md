@@ -56,18 +56,18 @@ bun run deploy
 
 ### Process Video
 
-- **POST** `/process-video/:id`
+- **POST** `api/process-video/:id`
   - Starts transcription process for a YouTube video
   - Returns cached result if available
 
 ### Check Status
 
-- **GET** `/status/:instanceId`
+- **GET** `api/status/:instanceId`
   - Check the status of a running transcription workflow
 
 ### Search
 
-- **GET** `/search?q=query`
+- **GET** `api/search?q=query`
   - Perform semantic search across transcribed videos
 
 ## Architecture

@@ -6,8 +6,10 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.60",
+    "@clerk/backend": "^1.19.0",
     "@deepgram/sdk": "^3.9.0",
     "@distube/ytdl-core": "^4.15.1",
+    "@hono/clerk-auth": "^2.0.0",
     "@langchain/cohere": "^0.3.1",
     "@pinecone-database/pinecone": "^3.0.3",
     "@ybd-project/ytdl-core": "^6.0.8",

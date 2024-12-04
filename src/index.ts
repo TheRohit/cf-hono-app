@@ -1,35 +1,54 @@
 import type {
   Ai,
   KVNamespace,
-  R2Bucket,
   VectorizeIndex,
   Workflow,
 } from "@cloudflare/workers-types";
+import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { searchTranscriptions } from "./lib/search";
 import { checkStatus, ytdlWorker } from "./lib/ytdl";
 import { TranscriptionWorkflow } from "./workflows/transcription";
 
 export interface Bindings {
   KV: KVNamespace;
-  R2: R2Bucket;
-  PINECONE_API_KEY: string;
-  COHERE_API_KEY: string;
   GROQ_API_KEY: string;
-  DEEPGRAM_API_KEY: string;
-  COOKIE: string;
   TRANSCRIPTION_WORKFLOW: Workflow;
   AI: Ai;
   VECTORIZE: VectorizeIndex;
+  CLERK_SECRET_KEY: string;
+  CLERK_PUBLISHABLE_KEY: string;
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+app.use(
+  "*",
+  cors({
+    origin: ["http://localhost:3000", "summarisev2.rohitm.dev"],
+    credentials: true,
+  })
+);
+
+app.use("*", clerkMiddleware());
+
+const authMiddleware = async (c: any, next: any) => {
+  const auth = await getAuth(c);
+  console.log(auth?.getToken());
+  if (!auth?.userId) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  return next();
+};
+
+app.use("/api/*", authMiddleware);
 
 app.get("/", (c) => {
   return c.text("Hello , hehe");
 });
 
-app.post("/process-video/:id", async (c, env) => {
+app.post("/api/process-video/:id", async (c, env) => {
   try {
     console.log("Processing video with id: ", c.req.param("id"));
     const id = c.req.param("id");
@@ -47,7 +66,7 @@ app.post("/process-video/:id", async (c, env) => {
   }
 });
 
-app.get("/status/:instanceId", async (c) => {
+app.get("/api/status/:instanceId", async (c) => {
   try {
     const instanceId = c.req.param("instanceId");
     if (!instanceId) {
@@ -64,7 +83,7 @@ app.get("/status/:instanceId", async (c) => {
   }
 });
 
-app.get("/search", async (c) => {
+app.get("/api/search", async (c) => {
   try {
     const query = c.req.query("q");
     if (!query) {
