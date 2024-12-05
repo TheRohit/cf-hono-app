@@ -8,7 +8,7 @@ import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { searchTranscriptions } from "./lib/search";
-import { checkStatus, ytdlWorker } from "./lib/ytdl";
+import { checkStatus, getTranscription, ytdlWorker } from "./lib/ytdl";
 import { TranscriptionWorkflow } from "./workflows/transcription";
 
 export interface Bindings {
@@ -81,6 +81,15 @@ app.get("/api/status/:instanceId", async (c) => {
       500
     );
   }
+});
+
+app.get("/api/transcription/:videoId", async (c) => {
+  const videoId = c.req.param("videoId");
+  if (!videoId) {
+    return c.json({ error: "Missing video ID" }, 400);
+  }
+  const transcription = await getTranscription(videoId, c);
+  return c.json(transcription);
 });
 
 app.get("/api/search", async (c) => {

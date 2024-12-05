@@ -1,6 +1,6 @@
+import { Workflow } from "@cloudflare/workers-types";
 import { Context } from "hono";
 import { Bindings } from "..";
-import { Workflow } from "@cloudflare/workers-types";
 
 import { TranscriptionResult } from "./cache";
 
@@ -16,17 +16,14 @@ export const ytdlWorker = async (
   c: Context<{ Bindings: Bindings }>
 ) => {
   try {
-    // Check if we already have the transcription in KV
     const cached = await c.env.KV.get(`${KV_PREFIX}${id}`, "json");
     if (cached) {
-      console.log("Found cached transcription");
       return {
-        ...cached,
         cached: true,
+        status: "complete",
       };
     }
 
-    // If not cached, start new workflow
     const instance = await c.env.TRANSCRIPTION_WORKFLOW.create({
       params: {
         videoId: id,
@@ -55,21 +52,12 @@ export const checkStatus = async (
     const { videoInfo, transcription } = status.output as {
       videoInfo: TranscriptionResult["videoInfo"];
       transcription: string;
-      embeddings: number[][];
     };
 
     const result: TranscriptionResult = {
       videoInfo,
       transcription,
     };
-
-    await c.env.KV.put(
-      `${KV_PREFIX}${result.videoInfo.videoId}`,
-      JSON.stringify(result),
-      {
-        expirationTtl: 60 * 60 * 24 * 30, // Store for 30 days
-      }
-    );
 
     return {
       status: status.status,
@@ -79,4 +67,18 @@ export const checkStatus = async (
   }
 
   return status;
+};
+
+export const getTranscription = async (
+  videoId: string,
+  c: Context<{ Bindings: Bindings }>
+) => {
+  const transcription = (await c.env.KV.get(
+    `${KV_PREFIX}${videoId}`,
+    "json"
+  )) as TranscriptionResult | null;
+  return {
+    status: "complete",
+    output: transcription,
+  };
 };

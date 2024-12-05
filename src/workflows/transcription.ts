@@ -1,73 +1,24 @@
+import { Ai, KVNamespace, Vectorize } from "@cloudflare/workers-types";
+import { YtdlCore } from "@ybd-project/ytdl-core/serverless";
 import {
   WorkflowEntrypoint,
-  WorkflowStep,
   WorkflowEvent,
+  WorkflowStep,
 } from "cloudflare:workers";
-import { YtdlCore } from "@ybd-project/ytdl-core/serverless";
 import { Groq } from "groq-sdk";
-import { Ai, Vectorize } from "@cloudflare/workers-types";
+import { KV_PREFIX } from "../lib/cache";
+import { splitTranscription, truncateMetadata } from "../lib/utils";
 
 type Env = {
   GROQ_API_KEY: string;
   AI: Ai;
   VECTORIZE: Vectorize;
+  KV: KVNamespace;
 };
 
 type Params = {
   videoId: string;
 };
-
-function truncateMetadata(metadata: any): any {
-  const maxBytes = 10000; // Setting slightly below 10240 for safety
-  let truncated = JSON.parse(JSON.stringify(metadata));
-  const originalSize = JSON.stringify(truncated).length;
-
-  if (originalSize > maxBytes) {
-    console.warn(
-      `Metadata size (${originalSize} bytes) exceeds limit. Truncating...`
-    );
-    if (truncated.transcription) {
-      while (JSON.stringify(truncated).length > maxBytes) {
-        // Truncate the transcription by ~20% each time
-        truncated.transcription = truncated.transcription.slice(
-          0,
-          Math.floor(truncated.transcription.length * 0.8)
-        );
-      }
-    }
-    console.warn(`Truncated to ${JSON.stringify(truncated).length} bytes`);
-  }
-
-  return truncated;
-}
-
-function splitTranscription(
-  text: string,
-  maxChunkSize: number = 512
-): string[] {
-  // Split into sentences (roughly)
-  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-  const chunks: string[] = [];
-  let currentChunk = "";
-
-  for (const sentence of sentences) {
-    if (
-      (currentChunk + sentence).length > maxChunkSize &&
-      currentChunk.length > 0
-    ) {
-      chunks.push(currentChunk.trim());
-      currentChunk = sentence;
-    } else {
-      currentChunk += " " + sentence;
-    }
-  }
-
-  if (currentChunk.trim().length > 0) {
-    chunks.push(currentChunk.trim());
-  }
-
-  return chunks;
-}
 
 export class TranscriptionWorkflow extends WorkflowEntrypoint<Env, Params> {
   async run(event: WorkflowEvent<Params>, step: WorkflowStep) {
@@ -198,6 +149,16 @@ export class TranscriptionWorkflow extends WorkflowEntrypoint<Env, Params> {
           return modelResp.data;
         }
       );
+
+      await step.do("cache-transcription", async () => {
+        await this.env.KV.put(
+          `${KV_PREFIX}${event.payload.videoId}`,
+          JSON.stringify({
+            videoInfo,
+            transcription,
+          })
+        );
+      });
 
       return {
         videoInfo,
